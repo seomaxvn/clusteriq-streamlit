@@ -1,13 +1,13 @@
 import streamlit as st
 import pandas as pd
-from sklearn.feature_extraction.text import TfidfVectorizer
+from sentence_transformers import SentenceTransformer
 from sklearn.cluster import AgglomerativeClustering
 import unicodedata
 import re
 
-st.set_page_config(page_title="ClusterIQ – SEO Keyword Cluster Tool", layout="wide")
-st.title("🔍 ClusterIQ – Keyword Clustering & Internal Linking")
-st.markdown("Upload file CSV từ khóa, mình sẽ phân cụm, gán vai trò Pillar/Cluster và tính tiềm năng SEO cho bạn.")
+st.set_page_config(page_title="ClusterIQ – BERT-powered Keyword Clustering", layout="wide")
+st.title("🔍 ClusterIQ – Semantic Clustering with Sentence-BERT")
+st.markdown("Upload file CSV từ khóa, công cụ sẽ phân cụm theo ngữ nghĩa (BERT), gán vai trò Pillar/Cluster và tính tiềm năng SEO.")
 
 uploaded_file = st.file_uploader("📥 Upload file .csv chứa cột 'Keyword'", type="csv")
 
@@ -48,19 +48,19 @@ if uploaded_file:
         st.error("⚠️ File cần có cột 'Keyword' hoặc 'Primary Keyword'")
         st.stop()
 
-    keywords = df["Keyword"].dropna().tolist()
+    st.info("📦 Đang tải Sentence-BERT model...")
+    model = SentenceTransformer("all-mpnet-base-v2")
+    embeddings = model.encode(df["Keyword"].dropna().tolist(), show_progress_bar=True)
 
-    # TF-IDF clustering
-    vectorizer = TfidfVectorizer(analyzer='word', ngram_range=(1,2), stop_words='english')
-    X = vectorizer.fit_transform(keywords)
+    st.info("🔍 Đang phân cụm từ khóa...")
     clustering = AgglomerativeClustering(n_clusters=None, distance_threshold=1.2)
-    df["Flexible Cluster ID"] = clustering.fit_predict(X.toarray())
+    df["Flexible Cluster ID"] = clustering.fit_predict(embeddings)
 
+    st.info("🧱 Đang phân vai trò và tính điểm KOS...")
     records = []
     for cluster_id, group in df.groupby("Flexible Cluster ID"):
         if len(group) < 2:
             continue
-
         pillar_row = group.loc[group["Keyword"].apply(len).idxmin()]
         pillar_kw = pillar_row["Keyword"]
         pillar_url = slugify(pillar_kw)
@@ -88,8 +88,8 @@ if uploaded_file:
 
     result_df = pd.DataFrame(records)
 
-    st.success("✅ Đã xử lý xong!")
+    st.success("✅ Xử lý xong!")
     st.dataframe(result_df)
 
     csv = result_df.to_csv(index=False).encode("utf-8")
-    st.download_button("📥 Tải file kết quả", data=csv, file_name="clusteriq_result.csv", mime="text/csv")
+    st.download_button("📥 Tải file kết quả", data=csv, file_name="clusteriq_bert_result.csv", mime="text/csv")
