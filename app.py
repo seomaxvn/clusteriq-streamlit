@@ -4,10 +4,6 @@ from sentence_transformers import SentenceTransformer
 from sklearn.cluster import AgglomerativeClustering
 import unicodedata
 import re
-import networkx as nx
-from pyvis.network import Network
-import streamlit.components.v1 as components
-import tempfile
 
 st.set_page_config(page_title="ClusterIQ – BERT-powered Keyword Clustering", layout="wide")
 st.title("🔍 ClusterIQ – Semantic Clustering with Sentence-BERT")
@@ -36,7 +32,10 @@ def classify_kos(score):
     else: return "❌ Không nên ưu tiên"
 
 if uploaded_file:
-    df = pd.read_csv(uploaded_file)
+    try:
+        df = pd.read_csv(uploaded_file, encoding="utf-8")
+    except UnicodeDecodeError:
+        df = pd.read_csv(uploaded_file, encoding="ISO-8859-1")
 
     if "Primary Keyword" in df.columns:
         df["Keyword"] = df["Primary Keyword"]
@@ -45,7 +44,7 @@ if uploaded_file:
         st.stop()
 
     st.info("📦 Đang tải Sentence-BERT model...")
-    model = SentenceTransformer("all-mpnet-base-v2")
+    model = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
     embeddings = model.encode(df["Keyword"].dropna().tolist(), show_progress_bar=True)
 
     st.info("🔍 Đang phân cụm từ khóa...")
@@ -84,24 +83,13 @@ if uploaded_file:
     csv = result_df.to_csv(index=False).encode("utf-8")
     st.download_button("📥 Tải file kết quả", data=csv, file_name="clusteriq_bert_result.csv", mime="text/csv")
 
-    # Hiển thị sơ đồ cụm từ khóa dạng network graph
-    st.subheader("🌐 Sơ đồ phân cụm từ khóa (Interactive Network)")
-    G = nx.Graph()
-
+    # Sơ đồ phân cụm dạng văn bản
+    st.subheader("🗺️ Sơ đồ phân cụm theo chủ đề")
     for cluster_id, group in result_df.groupby("Flexible Cluster ID"):
         if len(group) < 2:
             continue
         pillar = group[group["Vai trò"] == "Pillar Page"]["Keyword"].values[0]
-        G.add_node(pillar, label=pillar, color="#2F80ED")
+        st.markdown(f"**🟢 Cluster {cluster_id}: {pillar}**")
         for _, row in group.iterrows():
             if row["Vai trò"] == "Cluster Content":
-                G.add_node(row["Keyword"], label=row["Keyword"], color="#56CC9D")
-                G.add_edge(pillar, row["Keyword"])
-
-    net = Network(height="600px", width="100%", bgcolor="#ffffff", font_color="black")
-    net.from_nx(G)
-
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmp_file:
-        net.save_graph(tmp_file.name)
-        tmp_file.seek(0)
-        components.html(tmp_file.read().decode("utf-8"), height=650, scrolling=True)
+                st.markdown(f"- 🔵 {row['Keyword']}")
