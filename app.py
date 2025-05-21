@@ -6,6 +6,10 @@ import unicodedata
 import re
 
 st.set_page_config(page_title="ClusterIQ – BERT-powered Keyword Clustering", layout="wide")
+
+# Logo nhỏ
+st.image("https://duythin.digital/wp-content/uploads/ChatGPT-Image-May-19-2025-04_01_55-PM.png", width=180)
+
 st.title("🔍 ClusterIQ – Semantic Clustering with Sentence-BERT")
 st.markdown("Upload file CSV từ khóa, công cụ sẽ phân cụm theo ngữ nghĩa (BERT), gán vai trò Pillar/Cluster và tính tiềm năng SEO.")
 
@@ -93,3 +97,16 @@ if uploaded_file:
         for _, row in group.iterrows():
             if row["Vai trò"] == "Cluster Content":
                 st.markdown(f"- 🔵 {row['Keyword']}")
+
+# Footer cố định
+st.markdown("""
+---
+<div style='text-align: center;'>
+    <strong>Duy Thin – Chuyên phần mềm SEO, Marketing tự động – AI</strong><br>
+    👉 <a href='https://duythin.digital' target='_blank'>duythin.digital</a> |
+    📌 <a href='https://zalo.me/0903867825' target='_blank'>Zalo: 0903 867 825</a> |
+    📌 <a href='https://facebook.com/duythin.digital' target='_blank'>Facebook</a> |
+    📌 <a href='https://youtube.com/@duythin.digital' target='_blank'>YouTube</a><br><br>
+    <a href='https://zalo.me/0903867825' target='_blank'><button style='padding:8px 16px;background:#25D366;color:white;border:none;border-radius:6px;cursor:pointer;'>💬 Liên hệ tư vấn SEO qua Zalo</button></a>
+</div>
+""", unsafe_allow_html=True)
